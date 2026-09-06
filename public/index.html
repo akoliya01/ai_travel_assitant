@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Travel Planning Assistant</title>
+    <style>
+      :root {
+        --bg: #eef3f0;
+        --panel: #ffffff;
+        --ink: #16211f;
+        --muted: #66736f;
+        --line: #dce5e1;
+        --accent: #0f766e;
+        --accent-dark: #115e59;
+        --soft: #f7faf8;
+        --warn: #9a3412;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Aptos", "Segoe UI", sans-serif;
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 30rem),
+          linear-gradient(135deg, #eef3f0 0%, #f7f4ed 100%);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1080px;
+        margin: 24px auto;
+        padding: 0 18px 28px;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .panel {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(220, 229, 225, 0.95);
+        border-radius: 10px;
+        box-shadow: 0 18px 50px rgba(22, 33, 31, 0.08);
+      }
+
+      .hero {
+        padding: 22px 0 18px;
+      }
+
+      h1 {
+        margin-top: 0;
+        margin-bottom: 6px;
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1.04;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 16px;
+      }
+
+      h3 {
+        margin: 18px 0 8px;
+        font-size: 15px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 118px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 15px;
+        line-height: 1.5;
+        resize: vertical;
+        outline: none;
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+      }
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 14px;
+        background: var(--accent);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 11px 18px;
+        min-width: 112px;
+        min-height: 42px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover:not(:disabled) {
+        background: var(--accent-dark);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.72;
+      }
+
+      .spinner {
+        width: 15px;
+        height: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.45);
+        border-top-color: #ffffff;
+        border-radius: 999px;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .response {
+        margin-top: 18px;
+      }
+
+      .snapshot {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .snapshot-card {
+        position: relative;
+        overflow: hidden;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: linear-gradient(145deg, #ffffff, #f2f8f5);
+      }
+
+      .snapshot-card.cost {
+        background: linear-gradient(145deg, #fffdf7, #fff4d7);
+      }
+
+      .snapshot-card.weather {
+        background: linear-gradient(145deg, #f4fbff, #e2f2f8);
+      }
+
+      .snapshot-card h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+      }
+
+      .snapshot-value {
+        display: block;
+        font-size: 21px;
+        font-weight: 800;
+        color: var(--accent-dark);
+      }
+
+      .snapshot-detail {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .rain-chart {
+        display: flex;
+        align-items: end;
+        gap: 7px;
+        height: 48px;
+        margin-top: 8px;
+      }
+
+      .rain-bar {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: end;
+        height: 100%;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .rain-bar::before {
+        display: block;
+        width: 100%;
+        min-height: 4px;
+        height: var(--rain-height);
+        margin-bottom: 4px;
+        border-radius: 4px 4px 2px 2px;
+        background: var(--accent);
+        content: "";
+      }
+
+      .snapshot-empty {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding: 12px;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .answer {
+        line-height: 1.62;
+      }
+
+      .answer p {
+        margin: 8px 0;
+      }
+
+      .answer ul {
+        margin: 8px 0 12px 20px;
+        padding: 0;
+      }
+
+      .answer li {
+        margin: 6px 0;
+      }
+
+      .answer-plain {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+
+      .answer-plain summary {
+        color: var(--accent-dark);
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .itinerary-grid {
+        display: grid;
+        gap: 12px;
+        margin: 4px 0 20px;
+      }
+
+      .day-card {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: var(--soft);
+      }
+
+      .day-card h3 {
+        margin: 0 0 8px;
+        color: var(--accent-dark);
+      }
+
+      .day-card ul {
+        margin-bottom: 0;
+      }
+
+      .data-table-wrap {
+        overflow-x: auto;
+        margin: 8px 0 20px;
+      }
+
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 480px;
+        font-size: 14px;
+      }
+
+      .data-table th,
+      .data-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      .data-table th {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .cost-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin: 8px 0 20px;
+      }
+
+      .cost-card {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf7;
+      }
+
+      .cost-card strong {
+        display: block;
+        color: var(--accent-dark);
+        font-size: 20px;
+        margin-top: 4px;
+      }
+
+      .cost-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        font-size: 13px;
+      }
+
+      .cost-table th,
+      .cost-table td {
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+      }
+
+      .cost-table th {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .cost-note {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .section-label {
+        margin: 18px 0 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .status {
+        display: none;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .status.active {
+        display: block;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      pre {
+        white-space: pre-wrap;
+      }
+
+      .side-stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .pill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 10px;
+        background: var(--soft);
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .pill.failed {
+        color: var(--warn);
+        border-color: #fed7aa;
+        background: #fff7ed;
+      }
+
+      .source-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .source-list a {
+        color: var(--accent-dark);
+        text-decoration: none;
+        font-weight: 650;
+      }
+
+      .source-list a:hover {
+        text-decoration: underline;
+      }
+
+      .empty {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .examples {
+        display: grid;
+        gap: 8px;
+        max-height: 520px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .example {
+        margin-top: 0;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 10px;
+        color: var(--ink);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .error {
+        border-color: #fecaca;
+        background: #fff1f2;
+        color: #7f1d1d;
+      }
+
+      @media (max-width: 850px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .cost-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .snapshot {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="hero">
+        <h1>Singapore travel planner</h1>
+        <p class="muted">Grounded destination guidance with live weather and currency support.</p>
+      </header>
+
+      <main class="shell">
+        <section class="panel card">
+          <h2>Ask your travel question</h2>
+          <textarea id="question" placeholder="Create a three-day Singapore itinerary for next week and adjust it based on weather."></textarea>
+          <button id="send"><span id="buttonText">Ask</span></button>
+          <div id="status" class="status">Retrieving destination knowledge and checking current travel data...</div>
+
+          <div id="result" class="response panel card" style="display: none"></div>
+        </section>
+
+        <aside class="side-stack">
+          <section class="panel card">
+            <h2>Current data used</h2>
+            <div id="tools" class="pill-list"><p class="empty">No live tools used yet.</p></div>
+          </section>
+
+          <section class="panel card">
+            <h2>Sources</h2>
+            <div id="sources"><p class="empty">Sources appear after an answer.</p></div>
+          </section>
+
+          <section class="panel card">
+            <h2>Try these</h2>
+            <div class="examples">
+              <button class="example" type="button">What are the must-visit attractions in Singapore?</button>
+              <button class="example" type="button">Which neighbourhoods are best for cultural experiences?</button>
+              <button class="example" type="button">How can a tourist travel around Singapore?</button>
+              <button class="example" type="button">Suggest activities for a family with children.</button>
+              <button class="example" type="button">What indoor attractions can I visit in Singapore?</button>
+              <button class="example" type="button">Create a three-day sightseeing itinerary for Singapore.</button>
+              <button class="example" type="button">What is the weather forecast for Singapore for the next three days?</button>
+              <button class="example" type="button">Is rain expected in Singapore, and should I plan indoor activities?</button>
+              <button class="example" type="button">Convert INR 50,000 to SGD.</button>
+              <button class="example" type="button">How much is 200 SGD in INR?</button>
+              <button class="example" type="button">Create a three-day Singapore itinerary and adjust it based on the weather forecast.</button>
+              <button class="example" type="button">Create a three-day Singapore itinerary, adjust it based on weather, and include the approximate cost.</button>
+              <button class="example" type="button">I have a budget of INR 60,000. Convert it to SGD and suggest a three-day itinerary.</button>
+              <button class="example" type="button">Suggest outdoor attractions and replace them with indoor options if rain is expected.</button>
+              <button class="example" type="button">Plan a family trip to Singapore with the latest weather forecast.</button>
+              <button class="example" type="button">Create a cultural itinerary and show my budget in Singapore dollars.</button>
+              <button class="example" type="button">What activities are suitable for a rainy day in Singapore?</button>
+              <button class="example" type="button">What local food and hawker-centre experiences should I consider?</button>
+              <button class="example" type="button">What information do you have about visa rules for Singapore?</button>
+            </div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script>
+      let sessionId = null;
+      let isLoading = false;
+
+      const questionInput = document.getElementById("question");
+      const sendButton = document.getElementById("send");
+      const buttonText = document.getElementById("buttonText");
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+      const sources = document.getElementById("sources");
+      const tools = document.getElementById("tools");
+      const snapshot = document.createElement("div");
+      snapshot.className = "snapshot";
+      snapshot.setAttribute("aria-live", "polite");
+
+      document.querySelectorAll(".example").forEach((button) => {
+        button.addEventListener("click", () => {
+          questionInput.value = button.textContent.trim();
+          questionInput.focus();
+        });
+      });
+
+      sendButton.addEventListener("click", async () => {
+        const message = questionInput.value.trim();
+        if (!message || isLoading) return;
+
+        setLoading(true);
+        result.style.display = "block";
+        result.className = "response panel card";
+        result.innerHTML = "<h2>Assistant response</h2><p class='muted'>Preparing a grounded answer...</p>";
+
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, sessionId })
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            renderError(data);
+            return;
+          }
+
+          sessionId = data.sessionId;
+          renderSources(data.sources || []);
+          renderToolSummary(data.toolResults || []);
+          renderSnapshot(data.answer, data.toolResults || []);
+          renderAnswer(data.answer);
+        } catch (error) {
+          renderError({ error: "Network request failed", detail: String(error) });
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      function setLoading(value) {
+        isLoading = value;
+        sendButton.disabled = value;
+        questionInput.disabled = value;
+        status.classList.toggle("active", value);
+        buttonText.innerHTML = value ? "<span class='spinner'></span> Planning" : "Ask";
+      }
+
+      function renderAnswer(answer) {
+        result.className = "response panel card";
+        result.innerHTML = `<h2>Assistant response</h2>${renderInteractiveAnswer(answer)}<details class="answer-plain"><summary>View full assistant response</summary><div class="answer">${formatAnswer(answer)}</div></details>`;
+      }
+
+      function renderSnapshot(answer, items) {
+        const weatherItem = items.find((item) => item.tool === "weather" && item.status === "success");
+        const cost = extractCost(answer);
+        const rows = weatherItem && weatherItem.payload && Array.isArray(weatherItem.payload.forecast) ? weatherItem.payload.forecast : [];
+        const weatherCard = rows.length
+          ? `<article class="snapshot-card weather"><h3>Weather outlook</h3><span class="snapshot-value">${escapeHtml(rows[0].minTempC)}–${escapeHtml(rows[0].maxTempC)}°C</span><span class="snapshot-detail">${rows.filter((row) => Number(row.rainProbabilityPercent) >= 40).length} day(s) need an indoor backup</span><div class="rain-chart">${rows.map((row) => `<span class="rain-bar" style="--rain-height: ${Math.max(8, Math.min(100, Number(row.rainProbabilityPercent)))}%">${escapeHtml(row.rainProbabilityPercent)}%</span>`).join("")}</div></article>`
+          : `<article class="snapshot-card weather"><h3>Weather outlook</h3><span class="snapshot-value">Not requested</span><span class="snapshot-detail">Ask for a forecast to adjust activities.</span></article>`;
+        const costCard = cost
+          ? `<article class="snapshot-card cost"><h3>Trip estimate</h3><span class="snapshot-value">${escapeHtml(cost.budget)}</span><span class="snapshot-detail">Budget style, per person</span><span class="snapshot-detail">Comfort: ${escapeHtml(cost.comfort)}</span></article>`
+          : `<article class="snapshot-card cost"><h3>Trip estimate</h3><span class="snapshot-value">Not requested</span><span class="snapshot-detail">Add “include approximate cost” to your question.</span></article>`;
+        const liveCount = items.filter((item) => item.status === "success").length;
+        const failedCount = items.filter((item) => item.status === "failed").length;
+        const dataCard = `<article class="snapshot-card"><h3>Data used</h3><span class="snapshot-value">${liveCount ? `${liveCount} live source${liveCount === 1 ? "" : "s"}` : "Knowledge base"}</span><span class="snapshot-detail">${failedCount ? `${failedCount} tool unavailable` : "Sources and recommendations separated"}</span></article>`;
+        snapshot.innerHTML = `${weatherCard}${costCard}${dataCard}`;
+        result.before(snapshot);
+      }
+
+      function renderInteractiveAnswer(answer) {
+        const itinerary = extractItinerary(answer);
+        const weatherItem = (window.lastToolResults || []).find((item) => item.tool === "weather" && item.status === "success");
+        const cost = extractCost(answer);
+        const suggestedPlan = extractSection(answer, "Suggested Plan");
+        let html = "";
+
+        if (itinerary.length) {
+          html += `<div class="section-label">Day-by-day plan</div><div class="itinerary-grid">${itinerary
+            .map((day) => `<article class="day-card"><h3>${escapeHtml(day.title)}</h3><ul>${day.activities.map((activity) => `<li>${escapeHtml(activity)}</li>`).join("")}</ul></article>`)
+            .join("")}</div>`;
+        }
+
+        if (weatherItem) {
+          html += renderWeatherTable(weatherItem.payload);
+        }
+
+        if (cost) {
+          html += `<div class="section-label">Approximate trip cost</div><div class="cost-grid"><div class="cost-card"><span class="muted">Budget style</span><strong>${escapeHtml(cost.budget)}</strong><span class="muted">per person, excluding flights</span></div><div class="cost-card"><span class="muted">Comfort style</span><strong>${escapeHtml(cost.comfort)}</strong><span class="muted">per person, excluding flights</span></div></div><div class="data-table-wrap"><table class="cost-table"><thead><tr><th>Category</th><th>Planning assumption</th><th>Included in estimate</th></tr></thead><tbody>${cost.rows.map((row) => `<tr><td>${escapeHtml(row.category)}</td><td>${escapeHtml(row.assumption)}</td><td>${escapeHtml(row.amount)}</td></tr>`).join("")}</tbody></table></div><p class="cost-note">Planning estimate only. Prices vary by dates, hotel, attraction choice, and exchange rate. Flights and visa fees are excluded.</p>`;
+        }
+
+        if (suggestedPlan) {
+          html += `<div class="section-label">Suggested plan</div><div class="answer">${formatAnswer(suggestedPlan)}</div>`;
+        }
+
+        return html || `<div class="answer">${formatAnswer(answer)}</div>`;
+      }
+
+      function extractSection(answer, sectionName) {
+        const lines = String(answer || "").split(/\r?\n/);
+        const start = lines.findIndex((line) => new RegExp(`^\\s*(?:#{2,4}\\s*)?${sectionName}\\s*:?\\s*$`, "i").test(line));
+        if (start < 0) return "";
+        const content = [];
+        for (let index = start + 1; index < lines.length; index += 1) {
+          if (/^\s*(?:#{2,4}\s*)?(Knowledge Base Facts|Current Information|Approximate Cost|Suggested Plan)\s*:?\s*$/i.test(lines[index])) break;
+          content.push(lines[index]);
+        }
+        return content.join("\n").trim();
+      }
+
+      function extractItinerary(answer) {
+        const lines = String(answer || "").split(/\r?\n/);
+        const days = [];
+        let current = null;
+        lines.forEach((line) => {
+          const heading = line.match(/^\s*(?:#{2,4}\s*)?(?:Day\s*\d+\s*[—-]?\s*)(.+)$/i);
+          if (heading) {
+            current = { title: heading[1].replace(/\*\*/g, "").trim(), activities: [] };
+            days.push(current);
+            return;
+          }
+          const activity = line.match(/^\s*-\s+\*?\*?(.+?)\*?\*?\s*$/);
+          if (current && activity) {
+            current.activities.push(activity[1].trim());
+          }
+        });
+        return days.filter((day) => day.activities.length);
+      }
+
+      function renderWeatherTable(payload) {
+        const rows = Array.isArray(payload.forecast) ? payload.forecast : [];
+        if (!rows.length) return "";
+        return `<div class="section-label">Forecast used for adjustments</div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Temperature</th><th>Rain chance</th><th>Plan cue</th></tr></thead><tbody>${rows
+          .map((row) => `<tr><td>${escapeHtml(formatDate(row.date))}</td><td>${escapeHtml(row.minTempC)}–${escapeHtml(row.maxTempC)}°C</td><td>${escapeHtml(row.rainProbabilityPercent)}%</td><td>${Number(row.rainProbabilityPercent) >= 40 ? "Keep an indoor backup" : "Good for outdoor time"}</td></tr>`)
+          .join("")}</tbody></table></div>`;
+      }
+
+      function extractCost(answer) {
+        const text = String(answer || "");
+        const range = "(?:SGD\\s*)?[\\d,]+\\s*[-–]\\s*(?:SGD\\s*)?[\\d,]+(?:\\s*SGD)?";
+        const budget = text.match(new RegExp("budget(?: style)?[^\\n]*?(" + range + ")", "i"));
+        const comfort = text.match(new RegExp("comfort(?: style)?[^\\n]*?(" + range + ")", "i"));
+        const anyRange = text.match(new RegExp("(?:approximate cost|trip cost|cost)[^\\n]*?(" + range + ")", "i"));
+        if (!budget && !comfort && !anyRange) return null;
+
+        const budgetValue = normalizeCurrencyRange(budget ? budget[1] : anyRange ? anyRange[1] : "SGD 260-520");
+        const comfortValue = normalizeCurrencyRange(comfort ? comfort[1] : "SGD 560-1,150");
+        const rows = [
+          { category: "Accommodation", assumption: "2 nights, simple to mid-range stay", amount: findBreakdown(text, "accommodation", "SGD 160-700") },
+          { category: "Food", assumption: "Hawker meals and casual dining", amount: findBreakdown(text, "meals?|food", "SGD 60-220") },
+          { category: "Transport", assumption: "MRT/bus with limited taxi use", amount: findBreakdown(text, "transport", "SGD 20-100") },
+          { category: "Attractions", assumption: "Selected paid attractions and indoor backups", amount: findBreakdown(text, "attractions?", "SGD 20-130") }
+        ];
+        return { budget: budgetValue, comfort: comfortValue, rows };
+      }
+
+      function normalizeCurrencyRange(value) {
+        const cleaned = String(value).replace(/\s+/g, " ").trim();
+        return /^SGD/i.test(cleaned) ? cleaned : `SGD ${cleaned}`;
+      }
+
+      function findBreakdown(text, labelPattern, fallback) {
+        const match = text.match(new RegExp(labelPattern + "[^\\n:]*:?[^\\n]*?(SGD\\s*[\\d,]+\\s*[-–]\\s*[\\d,]+)", "i"));
+        return match ? normalizeCurrencyRange(match[1]) : fallback;
+      }
+
+      function formatDate(value) {
+        const date = new Date(`${value}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+      }
+
+      function renderSources(items) {
+        sources.innerHTML = items.length
+          ? `<ul class="source-list">${items
+              .map((source) => `<li><a href="${escapeAttribute(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(source.title)}</a></li>`)
+              .join("")}</ul>`
+          : "<p class='empty'>No source references returned.</p>";
+      }
+
+      function renderToolSummary(items) {
+        window.lastToolResults = items;
+        tools.innerHTML = items.length
+          ? items
+              .map((item) => {
+                const label = item.tool === "currency" ? currencyLabel(item) : weatherLabel(item);
+                const className = item.status === "failed" ? "pill failed" : "pill";
+                return `<span class="${className}">${escapeHtml(label)}</span>`;
+              })
+              .join("")
+          : "<p class='empty'>No live tools used for this answer.</p>";
+      }
+
+      function currencyLabel(item) {
+        if (item.status === "failed") return "Currency unavailable";
+        const payload = item.payload || {};
+        return `Currency: ${payload.inputAmount} ${payload.fromCurrency} = ${payload.convertedAmount} ${payload.toCurrency}`;
+      }
+
+      function weatherLabel(item) {
+        if (item.status === "failed") return "Weather unavailable";
+        const payload = item.payload || {};
+        const days = Array.isArray(payload.forecast) ? payload.forecast.length : 0;
+        return `Weather: ${days}-day forecast from ${payload.provider || "MCP tool"}`;
+      }
+
+      function renderError(data) {
+        result.className = "response panel card error";
+        result.innerHTML = `<h2>Something needs attention</h2><p>${escapeHtml(data.error || "Request failed")}</p><p class="muted">${escapeHtml(data.detail || "Please try again after checking configuration.")}</p>`;
+      }
+
+      function formatAnswer(answer) {
+        return escapeHtml(answer || "")
+          .replace(/^## (.*)$/gm, "<h3>$1</h3>")
+          .replace(/^\*\*(.*?)\*\*$/gm, "<h3>$1</h3>")
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+          .replace(/^- (.*)$/gm, "<li>$1</li>")
+          .replace(/(?:<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
+          .replace(/\n{2,}/g, "</p><p>")
+          .replace(/^/, "<p>")
+          .replace(/$/, "</p>")
+          .replace(/<p><h3>/g, "<h3>")
+          .replace(/<\/h3><\/p>/g, "</h3>")
+          .replace(/<p><ul>/g, "<ul>")
+          .replace(/<\/ul><\/p>/g, "</ul>");
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function escapeAttribute(value) {
+        return escapeHtml(value).replace(/`/g, "&#096;");
+      }
+    </script>
+  </body>
+</html>

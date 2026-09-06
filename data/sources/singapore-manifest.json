@@ -1,0 +1,32 @@
+[
+  {
+    "id": "wikivoyage-singapore",
+    "title": "Wikivoyage: Singapore",
+    "url": "https://en.wikivoyage.org/wiki/Singapore",
+    "localFile": "data/kb/wikivoyage-singapore.md",
+    "publisher": "Wikivoyage",
+    "license": "CC BY-SA; verify current terms before redistribution",
+    "contentType": "curated summary",
+    "accessedAt": "2026-09-04"
+  },
+  {
+    "id": "visit-singapore-essential",
+    "title": "Visit Singapore: Essential Information",
+    "url": "https://www.visitsingapore.com/travel-guide-tips/",
+    "localFile": "data/kb/visit-singapore-essential.md",
+    "publisher": "Singapore Tourism Board",
+    "license": "See publisher terms; curated summary retained for demo",
+    "contentType": "curated summary",
+    "accessedAt": "2026-09-04"
+  },
+  {
+    "id": "visit-singapore-itineraries",
+    "title": "Visit Singapore: Itineraries",
+    "url": "https://www.visitsingapore.com/editorials-and-itineraries/",
+    "localFile": "data/kb/visit-singapore-itineraries.md",
+    "publisher": "Singapore Tourism Board",
+    "license": "See publisher terms; curated summary retained for demo",
+    "contentType": "curated summary",
+    "accessedAt": "2026-09-04"
+  }
+]
