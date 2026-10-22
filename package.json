@@ -16,7 +16,7 @@
     "@langchain/core": "^0.3.66",
     "@langchain/openai": "^0.5.7",
     "@langchain/textsplitters": "^0.1.0",
-    "@modelcontextprotocol/sdk": "^1.17.5",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
